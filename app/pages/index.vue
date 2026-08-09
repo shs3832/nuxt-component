@@ -76,9 +76,7 @@
             <p class="study-card__step">STEP 3</p>
             <h2 id="input-study-title">UiInput</h2>
           </div>
-          <span class="study-card__status study-card__status--progress">
-            학습 중
-          </span>
+          <span class="study-card__status">완료</span>
         </div>
 
         <p class="study-card__description">
@@ -169,11 +167,7 @@
               :invalid="isInvalid"
               :aria-describedby="isInvalid ? 'inputReq2-error' : undefined"
             />
-            <p
-              v-if="isInvalid"
-              id="inputReq2-error"
-              class="field-demo__error"
-            >
+            <p v-if="isInvalid" id="inputReq2-error" class="field-demo__error">
               필수 입력 항목입니다.
             </p>
             <p class="field-demo__value">
@@ -184,6 +178,92 @@
           </form>
         </div>
       </section>
+
+      <section class="study-card" aria-labelledby="select-study-title">
+        <div class="study-card__header">
+          <div>
+            <p class="study-card__step">STEP 3</p>
+            <h2 id="select-study-title">UiSelect</h2>
+          </div>
+          <span class="study-card__status">완료</span>
+        </div>
+
+        <p class="study-card__description">
+          네이티브 선택 동작을 유지하며 기본, 비활성, 오류 상태를 비교합니다.
+        </p>
+
+        <div class="field-grid">
+          <div class="field-demo">
+            <div class="field-demo__header">
+              <label for="selectBox1">상태 선택</label>
+              <span>Default</span>
+            </div>
+            <UiSelect
+              id="selectBox1"
+              name="selectBox1"
+              class="field-demo__control"
+              v-model="inputSelect"
+            >
+              <option value="">전체</option>
+              <option value="active">사용중</option>
+              <option value="inactive">사용중지</option>
+            </UiSelect>
+            <p class="field-demo__value">
+              <span>v-model</span>
+              <code>{{ inputSelect || "빈 문자열" }}</code>
+            </p>
+          </div>
+
+          <div class="field-demo">
+            <div class="field-demo__header">
+              <label for="selectBox2">비활성 상태 선택</label>
+              <span>Disabled</span>
+            </div>
+            <UiSelect
+              id="selectBox2"
+              name="selectBox2"
+              class="field-demo__control"
+              v-model="inputSelect"
+              disabled
+            >
+              <option value="">전체</option>
+              <option value="active">사용중</option>
+              <option value="inactive">사용중지</option>
+            </UiSelect>
+            <p class="field-demo__value">
+              <span>v-model</span>
+              <code>{{ inputSelect || "빈 문자열" }}</code>
+            </p>
+          </div>
+
+          <div class="field-demo field-demo--validation">
+            <div class="field-demo__header">
+              <label for="selectBox3">필수 상태 선택</label>
+              <span>Invalid</span>
+            </div>
+            <UiSelect
+              id="selectBox3"
+              name="selectBox3"
+              class="field-demo__control"
+              v-model="inputSelect"
+              required
+              :invalid="true"
+              aria-describedby="inputSelect-error"
+            >
+              <option value="">선택해주세요</option>
+              <option value="active">사용중</option>
+              <option value="inactive">사용중지</option>
+            </UiSelect>
+            <p id="inputSelect-error" class="field-demo__error">
+              필수 선택 항목입니다.
+            </p>
+            <p class="field-demo__value">
+              <span>v-model</span>
+              <code>{{ inputSelect || "빈 문자열" }}</code>
+            </p>
+          </div>
+        </div>
+      </section>
     </div>
   </main>
 </template>
@@ -191,6 +271,7 @@
 <script lang="ts" setup>
 const inputMessage = ref("test message");
 const inputMessageRequired = ref("");
+const inputSelect = ref("");
 const hasSubmitted = ref(false);
 const isInvalid = computed(() => {
   return inputMessageRequired.value.trim() === "" && hasSubmitted.value;
@@ -221,7 +302,12 @@ const handleSubmit = () => {
   padding: clamp(32px, 6vw, 72px) clamp(20px, 4vw, 48px);
   color: #172033;
   font-family:
-    Inter, Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    Inter,
+    Pretendard,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
 }
 
 .study-hero,
