@@ -264,6 +264,90 @@
           </div>
         </div>
       </section>
+
+      <section class="study-card" aria-labelledby="checkbox-study-title">
+        <div class="study-card__header">
+          <div>
+            <p class="study-card__step">STEP 3</p>
+            <h2 id="checkbox-study-title">UiCheckbox</h2>
+          </div>
+          <span class="study-card__status">완료</span>
+        </div>
+
+        <p class="study-card__description">
+          boolean 모델을 기준으로 기본, 선택, 비활성, 오류 상태를 비교합니다.
+        </p>
+
+        <div class="field-grid">
+          <div class="field-demo">
+            <div class="field-demo__header">
+              <strong>기본 체크박스</strong>
+              <span>Default</span>
+            </div>
+            <label class="checkbox-demo__label">
+              <UiCheckbox v-model="agreed" />
+              <span>이메일 알림을 받습니다.</span>
+            </label>
+            <p class="field-demo__value">
+              <span>v-model</span>
+              <code>{{ agreed }}</code>
+            </p>
+          </div>
+
+          <div class="field-demo">
+            <div class="field-demo__header">
+              <strong>선택된 체크박스</strong>
+              <span>Checked</span>
+            </div>
+            <label class="checkbox-demo__label">
+              <UiCheckbox v-model="agreedChecked" />
+              <span>이용약관에 동의합니다.</span>
+            </label>
+            <p class="field-demo__value">
+              <span>v-model</span>
+              <code>{{ agreedChecked }}</code>
+            </p>
+          </div>
+
+          <div class="field-demo">
+            <div class="field-demo__header">
+              <strong>비활성 체크박스</strong>
+              <span>Disabled</span>
+            </div>
+            <label class="checkbox-demo__label checkbox-demo__label--disabled">
+              <UiCheckbox v-model="agreedDisabled" disabled />
+              <span>선택할 수 없는 항목입니다.</span>
+            </label>
+            <p class="field-demo__value">
+              <span>v-model</span>
+              <code>{{ agreedDisabled }}</code>
+            </p>
+          </div>
+
+          <div class="field-demo field-demo--validation">
+            <div class="field-demo__header">
+              <strong>필수 체크박스</strong>
+              <span>Invalid</span>
+            </div>
+            <label class="checkbox-demo__label">
+              <UiCheckbox
+                v-model="agreedRequired"
+                required
+                :invalid="true"
+                aria-describedby="inputCheckbox-error"
+              />
+              <span>개인정보 수집에 동의합니다.</span>
+            </label>
+            <p id="inputCheckbox-error" class="field-demo__error">
+              필수 동의 항목입니다.
+            </p>
+            <p class="field-demo__value">
+              <span>v-model</span>
+              <code>{{ agreedRequired }}</code>
+            </p>
+          </div>
+        </div>
+      </section>
     </div>
   </main>
 </template>
@@ -277,6 +361,10 @@ const isInvalid = computed(() => {
   return inputMessageRequired.value.trim() === "" && hasSubmitted.value;
 });
 const state = ref("바뀌기전");
+const agreed = ref(false);
+const agreedChecked = ref(true);
+const agreedDisabled = ref(false);
+const agreedRequired = ref(false);
 const buttonClick = () => {
   if (state.value === "바뀌기전") {
     state.value = "바뀜";
@@ -447,7 +535,8 @@ const handleSubmit = () => {
   margin-bottom: 10px;
 }
 
-.field-demo__header label {
+.field-demo__header label,
+.field-demo__header strong {
   color: #253047;
   font-size: 14px;
   font-weight: 700;
@@ -463,6 +552,22 @@ const handleSubmit = () => {
 
 .field-demo__control {
   width: 100%;
+}
+
+.checkbox-demo__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 32px;
+  color: #344054;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.checkbox-demo__label--disabled {
+  color: #98a2b3;
+  cursor: not-allowed;
 }
 
 .field-demo__error {
