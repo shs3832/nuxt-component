@@ -336,16 +336,26 @@ pages/users/index.vue / pages/products/index.vue
 ```text
 app/
 ├── app.vue
+├── assets/
+│   └── css/
+│       └── study.css
 ├── components/
 │   ├── product/
 │   │   └── ProductSearchForm.vue
 │   ├── search/
 │   │   └── SearchForm.vue
+│   ├── study/
+│   │   ├── ButtonSection.vue
+│   │   ├── FormControlsSection.vue
+│   │   ├── SearchFormSection.vue
+│   │   └── TableSection.vue
 │   ├── ui/
 │   │   ├── UiButton.vue
 │   │   ├── UiCheckbox.vue
 │   │   ├── UiInput.vue
-│   │   └── UiSelect.vue
+│   │   ├── UiPagination.vue
+│   │   ├── UiSelect.vue
+│   │   └── UiTable.vue
 │   └── user/
 │       └── UserSearchForm.vue
 └── pages/
@@ -388,6 +398,20 @@ public/
 - 회원·상품의 두 번째 사용처에서 공통 `SearchForm`의 실제 재사용 가능성 확인
 - 확인된 반복만 공통화하고 슬롯 내부 스타일은 도메인 컴포넌트에 남기는 경계 채택
 - 컴포넌트 이벤트는 버블링되지 않으므로 도메인 폼이 `search`, `reset`을 명시적으로 재전달
+- `pages/index.vue`의 학습 예제를 `components/study`의 영역별 컴포넌트로 분리
+- Nuxt 기본 컴포넌트 자동 등록에서 폴더명과 파일명이 조합된 이름을 사용하는 방식 확인
+- STEP 5 `UiTable`, `UiPagination` 구현과 브라우저 검증 완료
+- `UiTable`은 가로 스크롤 컨테이너, 공통 table 스타일과 기본 Slot만 소유
+- 열, 셀, `caption` 또는 `aria-labelledby`, `scope` 같은 테이블 의미 구조는 사용처가 소유
+- `$attrs`를 내부 `table`에 명시적으로 전달해 `aria-labelledby`, `aria-busy` 연결
+- `:slotted()`로 슬롯의 직접 자식인 `thead`, `tbody` 영역에 공통 스타일 적용
+- Loading → Empty → Data 순서로 상태를 분기하고 로딩 메시지에 `role="status"` 적용
+- table은 최소 너비를 유지하고 바깥 컨테이너가 가로 스크롤을 제공하도록 구현
+- Grid 자식인 카드에 `min-width: 0`을 적용해 테이블 영역 안에서 스크롤되는 동작 확인
+- `UiPagination`은 외부의 `page` 상태와 `totalPages`를 계약으로 받고 이전·다음 이동만 표현
+- 목록 사용처가 전체 페이지 수와 현재 페이지 데이터를 계산하는 클라이언트 Mock 페이지네이션 구현
+- 최초 로딩에서는 행을 상태 메시지로 대체하고 페이지 이동에서는 데이터를 교체하는 상태 전략 비교
+- API 요청, 서버 페이지네이션과 URL 동기화는 구현하지 않음
 - `npm run build` 성공
 
 ### 현재 요청 흐름
@@ -404,21 +428,20 @@ GET /
 
 ### 다음 시작점
 
-다음 단계는 `STEP 5 — UiTable과 Pagination`이다.
+다음 단계는 `STEP 6 — Modal과 상태 UI`이다.
 
-먼저 네이티브 table의 Semantic HTML과 공통 테이블이 소유할 표현 범위를 결정한다.
+먼저 Modal을 단순한 시각 레이어가 아니라 키보드와 포커스까지 포함한 상호작용 구조로 보고, 공통 컴포넌트와 사용처의 책임을 결정한다.
 
 ```text
-caption, thead, tbody, th, scope의 책임 확인
-→ 정적 데이터로 기본 테이블 구현
-→ 열 정의와 셀 마크업의 소유 위치 비교
-→ Empty, Loading 상태 표현
-→ 반응형 테이블 전략
-→ Pagination 조합
-→ 두 번째 목록 화면에서 재사용 검증
+네이티브 dialog와 직접 구현 방식 비교
+→ 열기·닫기 상태의 소유 위치 결정
+→ 제목, 설명과 접근성 이름 연결
+→ Escape, 배경 클릭과 닫기 정책
+→ 열린 뒤의 포커스와 닫힌 뒤의 포커스 복귀
+→ Loading, Empty, Error 같은 상태 UI의 공통화 범위 검토
 ```
 
-API 요청, 서버 페이지네이션과 실제 업무 데이터 처리는 아직 구현하지 않는다. 첫 실습에서는 완성 코드를 제공하지 않고, 공통 `UiTable`이 열과 셀을 모두 소유할지 또는 테이블 구조만 제공하고 Slot으로 셀을 조립할지부터 비교한다.
+인증, API 요청과 실제 업무 처리는 아직 구현하지 않는다. 첫 실습에서는 완성 코드를 제공하지 않고, Modal 코어가 열림 상태까지 소유할지 또는 외부 상태 계약으로 받을지부터 비교한다.
 
 ## 13. 새 스레드에서 이어가는 방법
 
@@ -427,9 +450,9 @@ API 요청, 서버 페이지네이션과 실제 업무 데이터 처리는 아�
 새 스레드의 첫 행동:
 
 1. `STUDY_GUIDE.md`에서 학습 원칙과 현재 상태를 확인한다.
-2. `package.json`, `app/components/search/SearchForm.vue`, 도메인 검색 폼과 `app/pages/index.vue`를 필요한 범위에서 확인한다.
+2. `package.json`, `app/components/ui/UiTable.vue`, `UiPagination.vue`, `app/components/study/TableSection.vue`와 `app/pages/index.vue`를 필요한 범위에서 확인한다.
 3. 학습자의 질문이 남아 있으면 먼저 답한다.
-4. Props drilling과 이벤트 재전달 이론을 반복하지 않고 테이블의 Semantic HTML, 상태 표현과 재사용 설계에 집중한다.
-5. 다음 시작점은 `STEP 5 — UiTable`의 구조와 셀 마크업 책임 결정이다.
+4. 테이블 구현을 반복하지 않고 Modal의 상태, 포커스, 키보드 동작과 책임 분리에 집중한다.
+5. 다음 시작점은 `STEP 6 — Modal과 상태 UI`의 열림 상태 책임 결정이다.
 6. 학습자가 `다음 단계`라고 말할 때만 구현 과제를 시작한다.
 7. 코드 수정은 학습자의 명확한 수정 요청 전까지 하지 않는다.
