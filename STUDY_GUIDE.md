@@ -319,7 +319,7 @@ pages/users/index.vue / pages/products/index.vue
 
 ## 12. 현재 상태
 
-기준일: 2026-08-08
+기준일: 2026-08-10
 
 ### 설치 환경
 
@@ -327,7 +327,9 @@ pages/users/index.vue / pages/products/index.vue
 - Vue `3.5.41` 설치
 - Node.js `24.14.0`
 - npm 사용
-- 아직 Git 저장소가 아님
+- Git 저장소와 GitHub 원격 저장소 연결 완료
+- `main` 브랜치 사용
+- 원격 저장소: `https://github.com/shs3832/nuxt-component.git`
 
 ### 현재 소스 구조
 
@@ -335,8 +337,17 @@ pages/users/index.vue / pages/products/index.vue
 app/
 ├── app.vue
 ├── components/
-│   └── ui/
-│       └── UiButton.vue
+│   ├── product/
+│   │   └── ProductSearchForm.vue
+│   ├── search/
+│   │   └── SearchForm.vue
+│   ├── ui/
+│   │   ├── UiButton.vue
+│   │   ├── UiCheckbox.vue
+│   │   ├── UiInput.vue
+│   │   └── UiSelect.vue
+│   └── user/
+│       └── UserSearchForm.vue
 └── pages/
     └── index.vue
 
@@ -364,6 +375,20 @@ public/
 - `:focus-visible`, Enter와 Space 실행, 비활성 버튼의 포커스 제외 확인
 - Primary, Secondary, Danger 텍스트 대비와 포커스 표시 대비 확인
 - 공용 UI는 업무 로직을 모르고 부모 또는 업무용 Presentation Component가 실제 처리를 소유한다는 경계 확인
+- STEP 3 `UiInput`, `UiSelect`, `UiCheckbox` 구현 완료
+- 입력 코어 UI는 네이티브 요소를 루트로 사용하고 `defineModel`로 `v-model` 계약 제공
+- `disabled`, `required`, `name`, `id` 등은 fallthrough attributes로 전달
+- 시각적 오류 상태와 `aria-invalid`를 연결하는 `invalid` Prop 구현
+- label, 안내 문구, 오류 메시지, 옵션과 실제 검증 조건은 상위 사용처가 소유
+- STEP 4 검색 영역 조합 완료
+- `SearchForm`이 form, 검색·초기화 이벤트, 버튼과 공통 반응형 배치를 소유
+- `UserSearchForm`, `ProductSearchForm`이 도메인별 필드, label, 옵션과 필드 배치를 소유
+- 페이지가 현재 검색 조건, 초기화와 마지막 검색 조건 스냅샷을 소유
+- `useId()`로 컴포넌트 인스턴스마다 고유한 label/control 연결 구현
+- 회원·상품의 두 번째 사용처에서 공통 `SearchForm`의 실제 재사용 가능성 확인
+- 확인된 반복만 공통화하고 슬롯 내부 스타일은 도메인 컴포넌트에 남기는 경계 채택
+- 컴포넌트 이벤트는 버블링되지 않으므로 도메인 폼이 `search`, `reset`을 명시적으로 재전달
+- `npm run build` 성공
 
 ### 현재 요청 흐름
 
@@ -379,22 +404,21 @@ GET /
 
 ### 다음 시작점
 
-다음 단계는 `STEP 3 — UiInput, UiSelect, UiCheckbox`다. 먼저 `UiInput`부터 시작한다.
+다음 단계는 `STEP 5 — UiTable과 Pagination`이다.
 
-`UiInput`은 다음 순서로 진행한다.
+먼저 네이티브 table의 Semantic HTML과 공통 테이블이 소유할 표현 범위를 결정한다.
 
 ```text
-label과 input의 Semantic HTML
-→ 기본 스타일과 크기
-→ v-model
-→ disabled
-→ readonly와 required
-→ error 상태와 메시지
-→ aria-invalid와 aria-describedby
-→ 실제 폼에서 조합
+caption, thead, tbody, th, scope의 책임 확인
+→ 정적 데이터로 기본 테이블 구현
+→ 열 정의와 셀 마크업의 소유 위치 비교
+→ Empty, Loading 상태 표현
+→ 반응형 테이블 전략
+→ Pagination 조합
+→ 두 번째 목록 화면에서 재사용 검증
 ```
 
-첫 실습에서는 완성 코드를 제공하지 않는다. `label`과 `input`을 하나의 `UiInput`이 모두 소유할지, 네이티브 input만 감쌀지를 UI 요구사항과 재사용 범위부터 비교한다. 마크업 구조가 결정된 뒤 한 단계씩 구현한다.
+API 요청, 서버 페이지네이션과 실제 업무 데이터 처리는 아직 구현하지 않는다. 첫 실습에서는 완성 코드를 제공하지 않고, 공통 `UiTable`이 열과 셀을 모두 소유할지 또는 테이블 구조만 제공하고 Slot으로 셀을 조립할지부터 비교한다.
 
 ## 13. 새 스레드에서 이어가는 방법
 
@@ -403,9 +427,9 @@ label과 input의 Semantic HTML
 새 스레드의 첫 행동:
 
 1. `STUDY_GUIDE.md`에서 학습 원칙과 현재 상태를 확인한다.
-2. `package.json`, `app/components/ui/UiButton.vue`, `app/pages/index.vue`를 필요한 범위에서 확인한다.
+2. `package.json`, `app/components/search/SearchForm.vue`, 도메인 검색 폼과 `app/pages/index.vue`를 필요한 범위에서 확인한다.
 3. 학습자의 질문이 남아 있으면 먼저 답한다.
-4. 이벤트 전달 이론을 반복하지 않고 퍼블리싱과 재사용 설계에 집중한다.
-5. 다음 시작점은 `STEP 3 — UiInput`의 마크업 책임 결정이다.
+4. Props drilling과 이벤트 재전달 이론을 반복하지 않고 테이블의 Semantic HTML, 상태 표현과 재사용 설계에 집중한다.
+5. 다음 시작점은 `STEP 5 — UiTable`의 구조와 셀 마크업 책임 결정이다.
 6. 학습자가 `다음 단계`라고 말할 때만 구현 과제를 시작한다.
 7. 코드 수정은 학습자의 명확한 수정 요청 전까지 하지 않는다.
