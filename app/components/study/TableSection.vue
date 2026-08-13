@@ -31,8 +31,17 @@
             </td>
           </tr>
         </template>
+        <template v-else-if="errorMessage">
+          <tr>
+            <td colspan="4" class="table-demo__state">
+              <span role="alert">{{ errorMessage }}</span>
+            </td>
+          </tr>
+        </template>
         <tr v-else-if="members.length === 0">
-          <td colspan="4" class="table-demo__state">검색 결과가 없습니다</td>
+          <td colspan="4" class="table-demo__state">
+            <span role="status">검색 결과가 없습니다.</span>
+          </td>
         </tr>
         <template v-else>
           <tr v-for="member in currentMembers" :key="member.id">
@@ -49,7 +58,7 @@
     </UiTable>
 
     <UiPagination
-      v-if="!isLoading && totalPages > 0"
+      v-if="showPagination"
       v-model:page="currentPage"
       :total-pages="totalPages"
     />
@@ -98,10 +107,14 @@ const totalPages = computed(() => {
 });
 
 const isLoading = ref(false);
+const errorMessage = ref<string | null>(null);
 const currentMembers = computed(() => {
   const startIndex = (currentPage.value - 1) * pageSize;
-
   return members.value.slice(startIndex, startIndex + pageSize);
+});
+
+const showPagination = computed(() => {
+  return !isLoading.value && !errorMessage.value && totalPages.value > 0;
 });
 </script>
 <style scoped>
