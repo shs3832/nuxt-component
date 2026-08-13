@@ -13,6 +13,7 @@
       <StudyFormControlsSection />
       <StudySearchFormSection />
       <StudyTableSection />
+      <StudyModalSection />
     </div>
   </main>
 </template>
