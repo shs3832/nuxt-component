@@ -17,7 +17,7 @@
     </template>
 
     <template #table>
-      <UiTable aria-label="제품 목록">
+      <UiTable aria-label="제품 목록" :aria-busy="isLoading">
         <thead>
           <tr>
             <th scope="col">상품명</th>
@@ -28,14 +28,27 @@
         </thead>
 
         <tbody>
-          <tr v-if="filteredProducts.length === 0">
+          <tr v-if="isLoading">
+            <td colspan="4">
+              <span role="status">제품 정보를 불러오는 중입니다.</span>
+            </td>
+          </tr>
+
+          <tr v-else-if="error">
+            <td colspan="4">
+              <span role="alert">{{ error }}</span>
+              <UiButton @click="handleRetry">다시 시도</UiButton>
+            </td>
+          </tr>
+
+          <tr v-else-if="items.length === 0">
             <td colspan="4">
               <span role="status">조건에 맞는 제품이 없습니다.</span>
             </td>
           </tr>
 
           <template v-else>
-            <tr v-for="product in paginatedProducts" :key="product.id">
+            <tr v-for="product in items" :key="product.id">
               <th scope="row">{{ product.name }}</th>
               <td>{{ product.code }}</td>
               <td>{{ productCategoryLabels[product.category] }}</td>
@@ -46,8 +59,12 @@
       </UiTable>
     </template>
 
-    <template v-if="filteredProducts.length > 0" #pagination>
-      <UiPagination v-model:page="page" :total-pages="totalPages" />
+    <template v-if="showPagination" #pagination>
+      <UiPagination
+        :page="page"
+        :total-pages="totalPages"
+        @update:page="handlePageChange"
+      />
     </template>
   </ListPageTemplate>
 </template>
@@ -73,6 +90,40 @@ type ProductSearchConditions = {
   includeSoldOut: boolean;
 };
 
+type ProductRequestParams = {
+  conditions: ProductSearchConditions;
+  page: number;
+  pageSize: number;
+  signal: AbortSignal;
+};
+
+type ProductResponse = {
+  items: Product[];
+  total: number;
+};
+type LoadProductsParams = Omit<ProductRequestParams, "signal">;
+
+const waitForMockResponse = (signal: AbortSignal, delay = 600) => {
+  return new Promise<void>((resolve, reject) => {
+    if (signal.aborted) {
+      reject(new DOMException("요청이 중단되었습니다.", "AbortError"));
+      return;
+    }
+
+    const handleAbort = () => {
+      clearTimeout(timeoutId);
+      reject(new DOMException("요청이 중단되었습니다.", "AbortError"));
+    };
+
+    const timeoutId = setTimeout(() => {
+      signal.removeEventListener("abort", handleAbort);
+      resolve();
+    }, delay);
+
+    signal.addEventListener("abort", handleAbort, { once: true });
+  });
+};
+
 const productCategoryLabels: Record<ProductCategory, string> = {
   clothing: "의류",
   electronics: "전자제품",
@@ -89,7 +140,7 @@ const createInitialSearchConditions = (): ProductSearchConditions => {
 const draftSearchConditions = ref(createInitialSearchConditions());
 const appliedSearchConditions = ref(createInitialSearchConditions());
 
-const mockProducts = ref<Product[]>([
+const mockProducts: Product[] = [
   {
     id: 1,
     name: "코튼 베이직 티셔츠",
@@ -125,34 +176,28 @@ const mockProducts = ref<Product[]>([
     category: "electronics",
     soldOut: false,
   },
-]);
+];
 
-const page = ref(1);
+const requestProducts = async ({
+  conditions,
+  page,
+  pageSize,
+  signal,
+}: ProductRequestParams): Promise<ProductResponse> => {
+  await waitForMockResponse(signal);
 
-const handleSearch = () => {
-  appliedSearchConditions.value = {
-    ...draftSearchConditions.value,
-  };
-  page.value = 1;
-};
-
-const handleReset = () => {
-  draftSearchConditions.value = createInitialSearchConditions();
-  appliedSearchConditions.value = createInitialSearchConditions();
-  page.value = 1;
-};
-
-const filteredProducts = computed(() => {
-  const keyword = appliedSearchConditions.value.keyword.trim().toLowerCase();
-
-  return mockProducts.value.filter((product) => {
-    if (!appliedSearchConditions.value.includeSoldOut && product.soldOut) {
+  const keyword = conditions.keyword.trim().toLowerCase();
+  if (keyword === "__error__") {
+    throw new Error("Mock product request failed");
+  }
+  const filteredProducts = mockProducts.filter((product) => {
+    if (!conditions.includeSoldOut && product.soldOut) {
       return false;
     }
 
     if (
-      appliedSearchConditions.value.category !== "" &&
-      appliedSearchConditions.value.category !== product.category
+      conditions.category !== "" &&
+      conditions.category !== product.category
     ) {
       return false;
     }
@@ -166,19 +211,130 @@ const filteredProducts = computed(() => {
       product.code.toLowerCase().includes(keyword)
     );
   });
-});
 
+  const total = filteredProducts.length;
+  const start = (page - 1) * pageSize;
+
+  return {
+    items: filteredProducts.slice(start, start + pageSize),
+    total,
+  };
+};
+
+const page = ref(1);
 const pageSize = 2;
+const items = ref<Product[]>([]);
+const total = ref(0);
+const isLoading = ref(true);
+const error = ref<string | null>(null);
+
+const createLoadProductsParams = (
+  requestedPage: number,
+): LoadProductsParams => {
+  return {
+    conditions: { ...appliedSearchConditions.value },
+    page: requestedPage,
+    pageSize,
+  };
+};
+
+let latestRequestId = 0;
+let activeRequestController: AbortController | null = null;
+
+const isAbortError = (caughtError: unknown) => {
+  return (
+    caughtError instanceof DOMException && caughtError.name === "AbortError"
+  );
+};
+
+const loadProducts = async (params: LoadProductsParams) => {
+  activeRequestController?.abort();
+
+  const requestController = new AbortController();
+  const requestId = ++latestRequestId;
+
+  activeRequestController = requestController;
+
+  items.value = [];
+  total.value = 0;
+  error.value = null;
+  isLoading.value = true;
+
+  try {
+    const response = await requestProducts({
+      ...params,
+      signal: requestController.signal,
+    });
+
+    if (requestId !== latestRequestId) return;
+
+    items.value = response.items;
+    total.value = response.total;
+  } catch (caughtError) {
+    if (requestId !== latestRequestId || isAbortError(caughtError)) {
+      return;
+    }
+
+    items.value = [];
+    total.value = 0;
+    error.value = "제품 정보를 불러오지 못했습니다. 다시 시도해 주세요.";
+  } finally {
+    if (requestId === latestRequestId) {
+      isLoading.value = false;
+
+      if (activeRequestController === requestController) {
+        activeRequestController = null;
+      }
+    }
+  }
+};
+
+const handleSearch = () => {
+  appliedSearchConditions.value = {
+    ...draftSearchConditions.value,
+  };
+  page.value = 1;
+  void loadProducts(createLoadProductsParams(1));
+};
+
+const handleReset = () => {
+  draftSearchConditions.value = createInitialSearchConditions();
+  appliedSearchConditions.value = createInitialSearchConditions();
+  page.value = 1;
+  void loadProducts(createLoadProductsParams(1));
+};
+
+const handlePageChange = (nextPage: number) => {
+  page.value = nextPage;
+
+  void loadProducts(createLoadProductsParams(nextPage));
+};
+
+const handleRetry = () => {
+  void loadProducts(createLoadProductsParams(page.value));
+};
 
 const totalPages = computed(() => {
-  return Math.ceil(filteredProducts.value.length / pageSize);
+  return Math.ceil(total.value / pageSize);
 });
 
-const paginatedProducts = computed(() => {
-  const start = (page.value - 1) * pageSize;
-  const end = start + pageSize;
+const showPagination = computed(() => {
+  return (
+    !isLoading.value &&
+    !error.value &&
+    items.value.length > 0 &&
+    totalPages.value > 0
+  );
+});
 
-  return filteredProducts.value.slice(start, end);
+onMounted(() => {
+  void loadProducts(createLoadProductsParams(page.value));
+});
+
+onBeforeUnmount(() => {
+  latestRequestId += 1;
+  activeRequestController?.abort();
+  activeRequestController = null;
 });
 </script>
 <style scoped>
