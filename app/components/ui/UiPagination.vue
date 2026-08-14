@@ -49,7 +49,6 @@ const handleNext = () => {
   align-items: center;
   justify-content: center;
   gap: 12px;
-  margin-top: 20px;
 }
 
 .ui-pagination__status {

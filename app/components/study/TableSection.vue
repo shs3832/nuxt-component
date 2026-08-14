@@ -61,6 +61,7 @@
       v-if="showPagination"
       v-model:page="currentPage"
       :total-pages="totalPages"
+      class="table-demo__pagination"
     />
   </section>
 </template>
@@ -122,5 +123,8 @@ const showPagination = computed(() => {
   padding-block: 48px;
   color: #667085;
   text-align: center;
+}
+.table-demo__pagination {
+  margin-top: 20px;
 }
 </style>
