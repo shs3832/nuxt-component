@@ -34,7 +34,7 @@
             <tr v-for="member in paginatedMembers" :key="member.id">
               <th scope="row">{{ member.name }}</th>
               <td>{{ member.email }}</td>
-              <td>{{ member.statusLabel }}</td>
+              <td>{{ memberStatusLabels[member.status] }}</td>
               <td>—</td>
             </tr>
           </template>
@@ -48,24 +48,20 @@
 </template>
 
 <script setup lang="ts">
+import type {
+  Member,
+  MemberSearchConditions,
+  MemberStatus,
+} from "../types/members";
+
 definePageMeta({
   layout: "admin",
 });
 
-type MemberStatus = "active" | "inactive" | "withdrawn";
-
-type Member = {
-  id: number;
-  name: string;
-  email: string;
-  status: MemberStatus;
-  statusLabel: string;
-};
-
-type MemberSearchConditions = {
-  status: string;
-  keyword: string;
-  includeWithdrawn: boolean;
+const memberStatusLabels: Record<MemberStatus, string> = {
+  active: "사용중",
+  inactive: "사용중지",
+  withdrawn: "탈퇴",
 };
 
 const members = ref<Member[]>([
@@ -74,28 +70,24 @@ const members = ref<Member[]>([
     name: "김민준",
     email: "minjun.kim@example.com",
     status: "active",
-    statusLabel: "사용중",
   },
   {
     id: 2,
     name: "이서연",
     email: "seoyeon.lee@example.com",
     status: "inactive",
-    statusLabel: "사용중지",
   },
   {
     id: 3,
     name: "박지훈",
     email: "jihoon.park@example.com",
     status: "active",
-    statusLabel: "사용중",
   },
   {
     id: 4,
     name: "최유진",
     email: "yujin.choi@example.com",
     status: "withdrawn",
-    statusLabel: "탈퇴",
   },
 ]);
 
@@ -107,8 +99,12 @@ const createInitialSearchConditions = (): MemberSearchConditions => {
   };
 };
 
-const draftSearchConditions = ref(createInitialSearchConditions());
-const appliedSearchConditions = ref(createInitialSearchConditions());
+const {
+  draftSearchConditions,
+  appliedSearchConditions,
+  applySearchConditions,
+  resetSearchConditions,
+} = useSearchConditions(createInitialSearchConditions);
 
 const filteredMembers = computed(() => {
   const keyword = appliedSearchConditions.value.keyword.trim().toLowerCase();
@@ -138,17 +134,12 @@ const filteredMembers = computed(() => {
 });
 
 const handleSearch = () => {
-  appliedSearchConditions.value = {
-    ...draftSearchConditions.value,
-  };
+  applySearchConditions();
   page.value = 1;
 };
 
 const handleReset = () => {
-  draftSearchConditions.value = createInitialSearchConditions();
-  appliedSearchConditions.value = {
-    ...draftSearchConditions.value,
-  };
+  resetSearchConditions();
   page.value = 1;
 };
 

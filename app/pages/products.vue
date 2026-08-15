@@ -70,59 +70,18 @@
 </template>
 
 <script setup lang="ts">
+import type {
+  LoadProductsParams,
+  Product,
+  ProductCategory,
+  ProductSearchConditions,
+} from "../types/products";
+import { fetchMockProducts } from "../utils/productsMockApi";
+import { isAbortError } from "../utils/requestError";
+
 definePageMeta({
   layout: "admin",
 });
-
-type ProductCategory = "clothing" | "electronics";
-
-type Product = {
-  id: number;
-  name: string;
-  code: string;
-  category: ProductCategory;
-  soldOut: boolean;
-};
-
-type ProductSearchConditions = {
-  category: string;
-  keyword: string;
-  includeSoldOut: boolean;
-};
-
-type ProductRequestParams = {
-  conditions: ProductSearchConditions;
-  page: number;
-  pageSize: number;
-  signal: AbortSignal;
-};
-
-type ProductResponse = {
-  items: Product[];
-  total: number;
-};
-type LoadProductsParams = Omit<ProductRequestParams, "signal">;
-
-const waitForMockResponse = (signal: AbortSignal, delay = 600) => {
-  return new Promise<void>((resolve, reject) => {
-    if (signal.aborted) {
-      reject(new DOMException("요청이 중단되었습니다.", "AbortError"));
-      return;
-    }
-
-    const handleAbort = () => {
-      clearTimeout(timeoutId);
-      reject(new DOMException("요청이 중단되었습니다.", "AbortError"));
-    };
-
-    const timeoutId = setTimeout(() => {
-      signal.removeEventListener("abort", handleAbort);
-      resolve();
-    }, delay);
-
-    signal.addEventListener("abort", handleAbort, { once: true });
-  });
-};
 
 const productCategoryLabels: Record<ProductCategory, string> = {
   clothing: "의류",
@@ -137,89 +96,12 @@ const createInitialSearchConditions = (): ProductSearchConditions => {
   };
 };
 
-const draftSearchConditions = ref(createInitialSearchConditions());
-const appliedSearchConditions = ref(createInitialSearchConditions());
-
-const mockProducts: Product[] = [
-  {
-    id: 1,
-    name: "코튼 베이직 티셔츠",
-    code: "CLO-001",
-    category: "clothing",
-    soldOut: false,
-  },
-  {
-    id: 2,
-    name: "오버핏 후드 집업",
-    code: "CLO-002",
-    category: "clothing",
-    soldOut: true,
-  },
-  {
-    id: 3,
-    name: "무선 키보드",
-    code: "ELC-001",
-    category: "electronics",
-    soldOut: false,
-  },
-  {
-    id: 4,
-    name: "노이즈 캔슬링 이어폰",
-    code: "ELC-002",
-    category: "electronics",
-    soldOut: true,
-  },
-  {
-    id: 5,
-    name: "휴대용 보조 배터리",
-    code: "ELC-003",
-    category: "electronics",
-    soldOut: false,
-  },
-];
-
-const requestProducts = async ({
-  conditions,
-  page,
-  pageSize,
-  signal,
-}: ProductRequestParams): Promise<ProductResponse> => {
-  await waitForMockResponse(signal);
-
-  const keyword = conditions.keyword.trim().toLowerCase();
-  if (keyword === "__error__") {
-    throw new Error("Mock product request failed");
-  }
-  const filteredProducts = mockProducts.filter((product) => {
-    if (!conditions.includeSoldOut && product.soldOut) {
-      return false;
-    }
-
-    if (
-      conditions.category !== "" &&
-      conditions.category !== product.category
-    ) {
-      return false;
-    }
-
-    if (keyword === "") {
-      return true;
-    }
-
-    return (
-      product.name.toLowerCase().includes(keyword) ||
-      product.code.toLowerCase().includes(keyword)
-    );
-  });
-
-  const total = filteredProducts.length;
-  const start = (page - 1) * pageSize;
-
-  return {
-    items: filteredProducts.slice(start, start + pageSize),
-    total,
-  };
-};
+const {
+  draftSearchConditions,
+  appliedSearchConditions,
+  applySearchConditions,
+  resetSearchConditions,
+} = useSearchConditions(createInitialSearchConditions);
 
 const page = ref(1);
 const pageSize = 2;
@@ -241,12 +123,6 @@ const createLoadProductsParams = (
 let latestRequestId = 0;
 let activeRequestController: AbortController | null = null;
 
-const isAbortError = (caughtError: unknown) => {
-  return (
-    caughtError instanceof DOMException && caughtError.name === "AbortError"
-  );
-};
-
 const loadProducts = async (params: LoadProductsParams) => {
   activeRequestController?.abort();
 
@@ -261,10 +137,10 @@ const loadProducts = async (params: LoadProductsParams) => {
   isLoading.value = true;
 
   try {
-    const response = await requestProducts({
-      ...params,
-      signal: requestController.signal,
-    });
+    const response = await fetchMockProducts(
+      params,
+      requestController.signal,
+    );
 
     if (requestId !== latestRequestId) return;
 
@@ -290,16 +166,13 @@ const loadProducts = async (params: LoadProductsParams) => {
 };
 
 const handleSearch = () => {
-  appliedSearchConditions.value = {
-    ...draftSearchConditions.value,
-  };
+  applySearchConditions();
   page.value = 1;
   void loadProducts(createLoadProductsParams(1));
 };
 
 const handleReset = () => {
-  draftSearchConditions.value = createInitialSearchConditions();
-  appliedSearchConditions.value = createInitialSearchConditions();
+  resetSearchConditions();
   page.value = 1;
   void loadProducts(createLoadProductsParams(1));
 };

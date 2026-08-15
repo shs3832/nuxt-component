@@ -38,11 +38,12 @@
 
 <script lang="ts" setup>
 import { useId } from "vue";
+import type { ProductSearchConditions } from "../../types/products";
 
 const categoryId = useId();
 const keywordId = useId();
 const includeSoldOutId = useId();
-const category = defineModel<string>("category", {
+const category = defineModel<ProductSearchConditions["category"]>("category", {
   required: true,
 });
 const keyword = defineModel<string>("keyword", {

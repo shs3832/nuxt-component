@@ -68,7 +68,10 @@
 </template>
 
 <script setup lang="ts">
-const createInitialUserSearchConditions = () => {
+import type { MemberSearchConditions } from "../../types/members";
+import type { ProductSearchConditions } from "../../types/products";
+
+const createInitialUserSearchConditions = (): MemberSearchConditions => {
   return {
     status: "",
     keyword: "",
@@ -76,7 +79,7 @@ const createInitialUserSearchConditions = () => {
   };
 };
 
-const createInitialProductSearchConditions = () => {
+const createInitialProductSearchConditions = (): ProductSearchConditions => {
   return {
     category: "",
     keyword: "",
@@ -84,15 +87,7 @@ const createInitialProductSearchConditions = () => {
   };
 };
 
-type UserSearchConditions = ReturnType<
-  typeof createInitialUserSearchConditions
->;
-
-type ProductSearchConditions = ReturnType<
-  typeof createInitialProductSearchConditions
->;
-
-const lastSearchedConditions = ref<UserSearchConditions | null>(null);
+const lastSearchedConditions = ref<MemberSearchConditions | null>(null);
 const lastProductSearchConditions = ref<ProductSearchConditions | null>(null);
 
 const userSearchConditions = ref(createInitialUserSearchConditions());

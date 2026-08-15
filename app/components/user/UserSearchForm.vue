@@ -33,11 +33,12 @@
 
 <script lang="ts" setup>
 import { useId } from "vue";
+import type { MemberSearchConditions } from "../../types/members";
 
 const statusId = useId();
 const keywordId = useId();
 const includeWithdrawnId = useId();
-const status = defineModel<string>("status", {
+const status = defineModel<MemberSearchConditions["status"]>("status", {
   required: true,
 });
 const keyword = defineModel<string>("keyword", {

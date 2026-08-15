@@ -47,7 +47,7 @@
           <tr v-for="member in currentMembers" :key="member.id">
             <th scope="row">{{ member.name }}</th>
             <td>{{ member.email }}</td>
-            <td>{{ member.statusLabel }}</td>
+            <td>{{ memberStatusLabels[member.status] }}</td>
             <td>
               <UiButton>수정</UiButton>
               <UiButton>삭제</UiButton>
@@ -74,7 +74,11 @@ type Member = {
   name: string;
   email: string;
   status: MemberStatus;
-  statusLabel: string;
+};
+
+const memberStatusLabels: Record<MemberStatus, string> = {
+  active: "사용중",
+  inactive: "사용중지",
 };
 
 const members = ref<Member[]>([
@@ -83,21 +87,18 @@ const members = ref<Member[]>([
     name: "김민준",
     email: "minjun.kim@example.com",
     status: "active",
-    statusLabel: "사용중",
   },
   {
     id: 2,
     name: "이서연",
     email: "seoyeon.lee@example.com",
     status: "inactive",
-    statusLabel: "사용중지",
   },
   {
     id: 3,
     name: "박지훈",
     email: "jihoon.park@example.com",
     status: "active",
-    statusLabel: "사용중",
   },
 ]);
 
